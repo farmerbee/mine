@@ -16,4 +16,6 @@ int main()
         std::cerr << "failed to load the config file\n";
         exit(EXIT_FAILURE);
     }
+
+    config->printConfig();
 }

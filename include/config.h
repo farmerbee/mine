@@ -28,6 +28,8 @@ namespace mine
          */
         std::string getValue(std::string key);
 
+        void printConfig(void) const;
+
     private:
         Config();
 

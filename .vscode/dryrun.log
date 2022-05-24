@@ -1,0 +1,8 @@
+make --dry-run --keep-going --print-directory
+make: Entering directory '/home/farmer/mine'
+for dir in /home/farmer/mine/helper /home/farmer/mine/test ;\
+do \
+	make -C ${dir};\
+done
+make: Leaving directory '/home/farmer/mine'
+ 

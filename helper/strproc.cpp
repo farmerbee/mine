@@ -1,5 +1,6 @@
 #include <cstring>
 #include <vector>
+#include <iostream>
 
 #include "strproc.h"
 
@@ -15,7 +16,7 @@ static std::vector<char> invalidChars = {
 
 bool validConfLine(const char* line)
 {
-    if (strlen(line) < 1) 
+    if (strlen(line) <= 1) 
         return false;
 
     char head = line[0];
@@ -36,7 +37,7 @@ void trimR(char* str, size_t len)
     while (len > 0)
     {
         char tail = str[len - 1];
-        if (tail == ' ' || tail == '\t' || tail == '\n')
+        if (tail == ' ' || tail == '\t' || tail == '\n' || tail == '\r')
         {
             str[len - 1] = '\0';
             len--;
@@ -64,10 +65,11 @@ void trimL(char* str, size_t len)
         }
     }
 
+    char *newStr = str;
     while (validPos <= str + len)
     {
-        *str = *validPos;
-        str++;
+        *newStr = *validPos;
+        newStr++;
         validPos++;
     }
 }

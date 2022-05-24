@@ -1,5 +1,4 @@
-CC = g++ -std=c++11 -pthread
+BIN = config-test
 
-ROOT = ${shell pwd}/..
+include ${BUILD_ROOT}/common.mk
 
-INCLUDE = ${ROOT}/include 

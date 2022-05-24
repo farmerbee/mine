@@ -62,24 +62,36 @@ bool Config::load(const std::string& path)
             continue;
         }
 
-        char* equalPos = strchr(buff, strlen(buff));
+        char* equalPos = strchr(buff, '=');
         if (!equalPos)
         {
             continue;
         }
+        int keyLen = equalPos - buff;
+        int valueLen = strlen(buff) - keyLen - 1;
         char key[BUFFSIZE], value[BUFFSIZE];
-        strncpy(key, buff, static_cast<size_t>(equalPos - buff));
-        strcpy(value, equalPos + 1);
+        memset(key, 0, sizeof(key));
+        memset(value, 0, sizeof(value));
+        strncpy(key, buff, keyLen);
+        strncpy(value, equalPos + 1, valueLen);
 
         trimR(key, strlen(key));
         trimL(key, strlen(key));
         trimR(value, strlen(value));
         trimL(value, strlen(value));
-
         m_items[key] = value;
     }
 
     fs.close();
 
     return true;
+}
+
+void Config::printConfig(void) const
+{
+    std::cout << "================  Configuration Items ==============\n";
+    for (const auto& kv: m_items)
+    {
+        std::cout << "\t\t\"" << kv.first << "\" : \"" << kv.second << "\"\n";
+    }
 }
