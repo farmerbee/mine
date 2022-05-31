@@ -1,2 +1,0 @@
-/usr/bin/ar qc libstrproc.a  CMakeFiles/strproc.dir/strproc.cpp.o
-/usr/bin/ranlib libstrproc.a

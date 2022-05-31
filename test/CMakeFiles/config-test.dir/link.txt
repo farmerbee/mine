@@ -1,1 +1,0 @@
-/usr/bin/c++  -pthread   CMakeFiles/config-test.dir/config-test.cpp.o  -o config-test  ../helper/libconfig.a ../helper/libstrproc.a 

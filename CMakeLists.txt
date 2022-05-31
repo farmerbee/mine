@@ -6,3 +6,4 @@ set(CMAKE_CXX_FLAGS -pthread)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/helper)
 add_subdirectory(${PROJECT_SOURCE_DIR}/test)
+add_subdirectory(${PROJECT_SOURCE_DIR}/server)

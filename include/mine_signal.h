@@ -24,7 +24,7 @@ public:
 
   bool registerSignals();
 
-private:
+public:
   typedef struct {
     int signo;
     std::string signame;

@@ -1,9 +1,0 @@
-/home/farmer/mine/CMakeFiles/rebuild_cache.dir
-/home/farmer/mine/CMakeFiles/edit_cache.dir
-/home/farmer/mine/helper/CMakeFiles/rebuild_cache.dir
-/home/farmer/mine/helper/CMakeFiles/edit_cache.dir
-/home/farmer/mine/helper/CMakeFiles/strproc.dir
-/home/farmer/mine/helper/CMakeFiles/config.dir
-/home/farmer/mine/test/CMakeFiles/rebuild_cache.dir
-/home/farmer/mine/test/CMakeFiles/edit_cache.dir
-/home/farmer/mine/test/CMakeFiles/config-test.dir
