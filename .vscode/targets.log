@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Tue May 24 12:05:32 2022
+# Make data base, printed on Tue May 31 11:12:04 2022
 
 # Variables
 
@@ -51,7 +51,7 @@ VTE_VERSION = 6003
 # environment
 VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
 # environment
-JOURNAL_STREAM = 8:53041
+JOURNAL_STREAM = 8:55821
 # environment
 XDG_CONFIG_DIRS = /etc/xdg/xdg-ubuntu:/etc/xdg
 # environment
@@ -77,7 +77,7 @@ DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
 # environment
 VSCODE_VERBOSE_LOGGING = true
 # environment
-MANAGERPID = 1641
+MANAGERPID = 1621
 # environment
 CLUTTER_IM_MODULE = fcitx
 # environment
@@ -95,7 +95,7 @@ PATH = /home/farmer/.local/bin:/home/farmer/veins/omnetpp-5.6.2/bin:/home/farmer
 # environment
 GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
-SESSION_MANAGER = local/farmer-Inspiron-7590:@/tmp/.ICE-unix/1880,unix/farmer-Inspiron-7590:/tmp/.ICE-unix/1880
+SESSION_MANAGER = local/farmer-Inspiron-7590:@/tmp/.ICE-unix/1860,unix/farmer-Inspiron-7590:/tmp/.ICE-unix/1860
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # environment
@@ -115,7 +115,7 @@ DISABLE_WAYLAND = 1
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # environment
-INVOCATION_ID = 990b90e9edce4fa7bbc3694880342d60
+INVOCATION_ID = 7a4f9879335344b3bdab6f5b1ebd21bc
 # environment
 GDK_PIXBUF_MODULEDIR = /snap/code/97/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders
 # default
@@ -143,7 +143,7 @@ BUILD_ROOT = ${shell pwd}
 # default
 .LOADED := 
 # environment
-SSH_AGENT_PID = 1833
+SSH_AGENT_PID = 1814
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = ubuntu:GNOME
 # environment
@@ -199,7 +199,7 @@ GNOME_SHELL_SESSION_MODE = ubuntu
 # makefile (from 'config.mk', line 7)
 BUILD_DIR = ${BUILD_ROOT}/helper ${BUILD_ROOT}/test 
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-2361ec0c-6a3b-43c3-aec0-2be0c1a0bef2.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-a83fd698-c14d-4b81-beec-66c892b49d8d.sock
 # default
 MAKE_VERSION := 4.2.1
 # environment
@@ -265,11 +265,11 @@ LC_ALL = C
 # environment
 QT4_IM_MODULE = fcitx
 # environment
-GNOME_TERMINAL_SCREEN = /org/gnome/Terminal/screen/c63e399f_8e07_40cf_bf6c_4311202ad061
+GNOME_TERMINAL_SCREEN = /org/gnome/Terminal/screen/115df90d_e35f_43b0_bae1_1970abeb5521
 # automatic
 ^F = $(notdir $^)
 # environment
-GNOME_TERMINAL_SERVICE = :1.136
+GNOME_TERMINAL_SERVICE = :1.120
 # default
 SUFFIXES := 
 # environment
@@ -291,11 +291,10 @@ LANG = C
 # environment
 TERM = xterm-256color
 # environment
-VSCODE_PID = 173090
+VSCODE_PID = 3960
 # variable set hash-table stats:
 # Load=141/1024=14%, Rehash=0, Collisions=19/180=11%
 
- 
 # Pattern-specific Variable Values
 
 # No pattern-specific variable values.
@@ -338,6 +337,7 @@ all:
 # automatic
 # + := 
 # automatic
+ 
 # | := 
 # automatic
 # < := 
@@ -401,6 +401,6 @@ clean:
 # strcache performance: lookups = 35 / hit rate = 42%
 # hash-table stats:
 # Load=20/8192=0%, Rehash=0, Collisions=1/35=3%
-# Finished Make data base on Tue May 24 12:05:32 2022
+# Finished Make data base on Tue May 31 11:12:04 2022
 
  
