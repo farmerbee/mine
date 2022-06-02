@@ -3,11 +3,10 @@
 
 #include "config.h"
 
-using namespace mine;
 
 int main()
 {
-    std::string configPath = "/home/farmer/mine/nginx.conf";
+    std::string configPath = "server.conf";
 
     auto config = Config::getInstance();
 

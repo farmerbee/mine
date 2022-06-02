@@ -5,8 +5,6 @@
 #include "config.h"
 #include "strproc.h"
 
-using namespace mine;
-
 #define BUFFSIZE 502
 
 Config* Config::m_instance = nullptr;
