@@ -89,8 +89,8 @@ public:
 
   std::string format(std::stringstream &ss, LogLevel::Level level,
                      LogEvent::ptr event);
-  std::ostream& format(std::ostream &os, LogLevel::Level level,
-                      LogEvent::ptr event);
+  std::ostream &format(std::ostream &os, LogLevel::Level level,
+                       LogEvent::ptr event);
 
 public:
   class LogFormatterItem {
@@ -114,8 +114,15 @@ class LogAppender {
 public:
   typedef std::shared_ptr<LogAppender> ptr;
 
+  LogAppender();
   virtual ~LogAppender();
   virtual void log(LogLevel::Level level, LogEvent::ptr event) = 0;
+
+  void setFormatter(LogFormatter::ptr fmt) { m_formatter = fmt; }
+  LogFormatter::ptr getFormatter() const { return m_formatter; }
+
+  void setLevel(LogLevel::Level level) {m_level = level;}
+  LogLevel::Level getLevel() const {return m_level;}
 
 protected:
   LogLevel::Level m_level;
@@ -158,6 +165,9 @@ public:
   void addAppender(LogAppender::ptr appender);
   void delAppender(LogAppender::ptr appender);
 
+  LogFormatter::ptr getFormatter() const {return m_formatter;}
+  void setFormatter(LogFormatter::ptr fmt);
+
   // log the event by the appenders
   void log(LogLevel::Level level, LogEvent::ptr event);
 
@@ -171,6 +181,7 @@ private:
   LogLevel::Level m_level;
   std::list<LogAppender::ptr> m_appenders;
   std::string m_name;
+  LogFormatter::ptr m_formatter;
 };
 
 #endif

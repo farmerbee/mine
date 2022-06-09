@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -54,7 +55,14 @@ LogEvent::LogEvent(std::shared_ptr<Logger> logger, LogLevel::Level level,
                    uint64_t elapse, std::time_t timestamp, uint32_t threadid,
                    uint32_t fiberid)
     : m_logger(logger), m_level(level), m_elapse(elapse),
-      m_timestamp(std::time(NULL)), m_threadid(66), m_fiberid(88) {}
+      m_timestamp(std::time(NULL)), m_threadid(threadid), m_fiberid(fiberid),
+      m_filename(__FILE__), m_lineno(__LINE__) {}
+
+LogFormatter::LogFormatterItem::~LogFormatterItem() {}
+
+void LogFormatter::LogFormatterItem::format(std::stringstream &ss,
+                                            LogLevel::Level level,
+                                            LogEvent::ptr event) {}
 
 class MessageFormatterItem : public LogFormatter::LogFormatterItem {
 public:
@@ -196,6 +204,7 @@ void LogFormatter::init() {
   std::vector<std::tuple<std::string, std::string, int>> vec;
   auto size = m_pattern.size();
 
+  // std::cout << "pattern: " << m_pattern << std::endl;
   for (std::string::size_type i = 0; i < size; i++) {
     char ch = m_pattern[i];
     // pure string
@@ -207,6 +216,7 @@ void LogFormatter::init() {
     if (i + 1 < size && m_pattern[i + 1] == '%') {
       pureString.push_back(m_pattern[i + 1]);
       i++;
+      continue;
     }
     // start parse the pattern with format
     std::string::size_type next = i + 1, formatBegin = next;
@@ -218,21 +228,16 @@ void LogFormatter::init() {
       if (status == 0) {
         if (!std::isalpha(nextChar)) {
           symbol = m_pattern.substr(i + 1, next - i - 1);
+          if (nextChar != '{')
+            break;
+          status = 1;
+          formatBegin = next;
         }
-        if (nextChar != '{')
-          break;
-        status = 1;
-        formatBegin = next;
-      } else {
-        if (!std::isalpha(nextChar)) {
-          if (nextChar != '}') {
-            std::cerr << "log format pattern error : '}' is missing!";
-          } else {
-            format = m_pattern.substr(formatBegin + 1, next - formatBegin - 1);
-            status = 0;
-          }
-          break;
-        }
+      } else if (nextChar == '}') {
+        format = m_pattern.substr(formatBegin + 1, next - formatBegin - 1);
+        status = 0;
+        next++;
+        break;
       }
 
       next++;
@@ -256,7 +261,10 @@ void LogFormatter::init() {
                 << std::endl;
       vec.emplace_back(std::make_tuple("<<pattern_error>>", "", 0));
       m_error = true;
+      break;
     }
+
+    // std::cout << i << ": " << symbol << "\t" << format << std::endl;
   }
 
   if (!pureString.empty()) {
@@ -280,25 +288,22 @@ void LogFormatter::init() {
 #undef KV
       };
 
-    for (const auto& tpl : vec)
-    {
-      std::string symbol = std::get<0>(tpl),
-                  fmt = std::get<1>(tpl);
-      int type = std::get<2>(tpl);
-      if (type == 0)
-      {
-        m_items.emplace_back(LogFormatterItem::ptr(new StringFormatterItem(symbol)));
-      }else {
-        if (itemMap.count(symbol))
-        {
-          m_items.emplace_back(itemMap[symbol](fmt));
-        } else  
-        {
-          m_items.emplace_back(LogFormatterItem::ptr(new StringFormatterItem("<<error_format : " + symbol + ">>")));
-          m_error = true;
-        } 
+  for (const auto &tpl : vec) {
+    std::string symbol = std::get<0>(tpl), fmt = std::get<1>(tpl);
+    int type = std::get<2>(tpl);
+    if (type == 0) {
+      m_items.emplace_back(
+          LogFormatterItem::ptr(new StringFormatterItem(symbol)));
+    } else {
+      if (itemMap.count(symbol)) {
+        m_items.emplace_back(itemMap[symbol](fmt));
+      } else {
+        m_items.emplace_back(LogFormatterItem::ptr(
+            new StringFormatterItem("<<error_format : " + symbol + ">>")));
+        m_error = true;
       }
     }
+  }
 }
 
 std::string LogFormatter::format(std::stringstream &ss, LogLevel::Level level,
@@ -319,10 +324,14 @@ std::ostream &LogFormatter::format(std::ostream &os, LogLevel::Level level,
   return os;
 }
 
+LogAppender::LogAppender() : m_level(LogLevel::DEBUG), m_formatter() {}
+
+LogAppender::~LogAppender() {}
+
 StdLogAppender::~StdLogAppender() {}
 
 void StdLogAppender::log(LogLevel::Level level, LogEvent::ptr event) {
-  if (level > m_level) {
+  if (level >= m_level) {
     m_formatter->format(std::cout, level, event);
   }
 }
@@ -340,12 +349,19 @@ bool FileLogAppender::reopen() {
   return !!m_filestream;
 }
 
-Logger::Logger(std::string name) : m_name(name) {}
+Logger::Logger(std::string name) : m_name(name), m_level(LogLevel::DEBUG) {
+  m_formatter.reset(
+      new LogFormatter("%d{%Y-%m-%d %H:%M:%S}%T%t%T%T%F%T[%p]%T%f:%l%T%m%n"));
+}
 
 Logger::~Logger() {}
 
 void Logger::addAppender(LogAppender::ptr appender) {
-  return m_appenders.push_back(appender);
+  if (!appender->getFormatter())
+  {
+    appender->setFormatter(m_formatter);
+  }
+  m_appenders.emplace_back(appender);
 }
 
 void Logger::delAppender(LogAppender::ptr appender) {
@@ -358,7 +374,7 @@ void Logger::delAppender(LogAppender::ptr appender) {
 }
 
 void Logger::log(LogLevel::Level level, LogEvent::ptr event) {
-  if (level > m_level) {
+  if (level >= m_level) {
     for (auto app : m_appenders) {
       app->log(level, event);
     }
