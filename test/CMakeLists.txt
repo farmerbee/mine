@@ -7,3 +7,8 @@ target_link_libraries(config-test config)
 add_executable(signal-test signal-test.cpp)
 
 target_link_libraries(signal-test mine_signal)
+
+add_executable(log-test log-test.cpp)
+
+target_link_libraries(log-test log) 
+
