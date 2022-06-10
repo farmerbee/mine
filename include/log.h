@@ -1,6 +1,7 @@
 #ifndef __LOG_H
 #define __LOG_H
 
+#include <bits/types/time_t.h>
 #include <cstdint>
 #include <ctime>
 #include <fstream>
@@ -92,6 +93,8 @@ public:
   std::ostream &format(std::ostream &os, LogLevel::Level level,
                        LogEvent::ptr event);
 
+  bool error() const { return m_error; }
+
 public:
   class LogFormatterItem {
   public:
@@ -118,11 +121,11 @@ public:
   virtual ~LogAppender();
   virtual void log(LogLevel::Level level, LogEvent::ptr event) = 0;
 
-  void setFormatter(LogFormatter::ptr fmt) { m_formatter = fmt; }
-  LogFormatter::ptr getFormatter() const { return m_formatter; }
+  void setFormatter(LogFormatter::ptr fmt); 
+  LogFormatter::ptr getFormatter() const; 
 
-  void setLevel(LogLevel::Level level) {m_level = level;}
-  LogLevel::Level getLevel() const {return m_level;}
+  void setLevel(LogLevel::Level level); 
+  LogLevel::Level getLevel() const; 
 
 protected:
   LogLevel::Level m_level;
@@ -143,6 +146,8 @@ class FileLogAppender : public LogAppender {
 public:
   typedef std::shared_ptr<FileLogAppender> ptr;
 
+  FileLogAppender(const std::string& file);
+
   ~FileLogAppender();
   void log(LogLevel::Level level, LogEvent::ptr event) override;
 
@@ -151,6 +156,7 @@ public:
 private:
   std::string m_filename;
   std::ofstream m_filestream;
+  time_t m_lastTime;
 };
 
 class Logger {
@@ -164,9 +170,11 @@ public:
 
   void addAppender(LogAppender::ptr appender);
   void delAppender(LogAppender::ptr appender);
+  void clearAppender();
 
-  LogFormatter::ptr getFormatter() const {return m_formatter;}
+  LogFormatter::ptr getFormatter() const { return m_formatter; }
   void setFormatter(LogFormatter::ptr fmt);
+  void setFormatter(const std::string &pattern);
 
   // log the event by the appenders
   void log(LogLevel::Level level, LogEvent::ptr event);
@@ -182,6 +190,7 @@ private:
   std::list<LogAppender::ptr> m_appenders;
   std::string m_name;
   LogFormatter::ptr m_formatter;
+  Logger::ptr m_root;
 };
 
 #endif

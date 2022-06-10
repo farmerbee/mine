@@ -9,6 +9,7 @@ int main() {
   LogFormatter fmt("%d{%Y-%m-%d %H:%M:%S}%T%t%T%T%F%T[%p]%T%f:%l%T%m%n");
 
   logger->addAppender(LogAppender::ptr(new StdLogAppender()));
+  logger->addAppender(LogAppender::ptr(new FileLogAppender("log.txt")));
 
   logger->log(LogLevel::DEBUG, e);
 }

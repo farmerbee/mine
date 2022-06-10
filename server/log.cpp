@@ -4,6 +4,7 @@
 #include <cctype>
 #include <cstdio>
 #include <ctime>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <string>
@@ -11,6 +12,8 @@
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
+
+/**----------------- LogLevel ---------------------------**/
 
 std::string LogLevel::toString(LogLevel::Level level) {
   switch (level) {
@@ -51,12 +54,16 @@ LogLevel::Level LogLevel::fromString(std::string &hint) {
   return LogLevel::UNKOWN;
 }
 
+/**----------------- LogEvent ---------------------------**/
+
 LogEvent::LogEvent(std::shared_ptr<Logger> logger, LogLevel::Level level,
                    uint64_t elapse, std::time_t timestamp, uint32_t threadid,
                    uint32_t fiberid)
     : m_logger(logger), m_level(level), m_elapse(elapse),
       m_timestamp(std::time(NULL)), m_threadid(threadid), m_fiberid(fiberid),
       m_filename(__FILE__), m_lineno(__LINE__) {}
+
+/**----------------- LogFormatter ---------------------------**/
 
 LogFormatter::LogFormatterItem::~LogFormatterItem() {}
 
@@ -120,7 +127,7 @@ public:
 
   void format(std::ostream &os, LogLevel::Level level,
               LogEvent::ptr event) override {
-    os << event->getThreadId();
+    os << event->getFiberId();
   }
 };
 
@@ -324,9 +331,19 @@ std::ostream &LogFormatter::format(std::ostream &os, LogLevel::Level level,
   return os;
 }
 
+/**----------------- LogAppender ---------------------------**/
+
 LogAppender::LogAppender() : m_level(LogLevel::DEBUG), m_formatter() {}
 
 LogAppender::~LogAppender() {}
+
+void LogAppender::setFormatter(LogFormatter::ptr fmt) { m_formatter = fmt; }
+
+LogFormatter::ptr LogAppender::getFormatter() const { return m_formatter; }
+
+void LogAppender::setLevel(LogLevel::Level level) { m_level = level; }
+
+LogLevel::Level LogAppender::getLevel() const { return m_level; }
 
 StdLogAppender::~StdLogAppender() {}
 
@@ -336,18 +353,41 @@ void StdLogAppender::log(LogLevel::Level level, LogEvent::ptr event) {
   }
 }
 
-FileLogAppender::~FileLogAppender() {}
+FileLogAppender::FileLogAppender(const std::string &file)
+    : m_filename(file), m_lastTime(time(NULL)) {
+  reopen();
+}
 
-void FileLogAppender::log(LogLevel::Level level, LogEvent::ptr event) {}
-
-bool FileLogAppender::reopen() {
-  if (m_filestream) {
+FileLogAppender::~FileLogAppender() {
+  if (m_filestream.is_open()) {
     m_filestream.close();
   }
-  m_filestream.open(m_filename);
-
-  return !!m_filestream;
 }
+
+void FileLogAppender::log(LogLevel::Level level, LogEvent::ptr event) {
+  if (level < m_level)
+    return;
+
+  auto logTime = event->getTimestamp();
+  if (logTime > m_lastTime + 3)
+  {
+    reopen();
+    m_lastTime = logTime;
+  }
+
+  m_formatter->format(m_filestream, level, event);
+}
+
+bool FileLogAppender::reopen() {
+  if (m_filestream.is_open()) {
+    m_filestream.close();
+  }
+  m_filestream.open(m_filename, std::ofstream::app);
+
+  return m_filestream.is_open();
+}
+
+/**----------------- Logger ---------------------------**/
 
 Logger::Logger(std::string name) : m_name(name), m_level(LogLevel::DEBUG) {
   m_formatter.reset(
@@ -357,8 +397,7 @@ Logger::Logger(std::string name) : m_name(name), m_level(LogLevel::DEBUG) {
 Logger::~Logger() {}
 
 void Logger::addAppender(LogAppender::ptr appender) {
-  if (!appender->getFormatter())
-  {
+  if (!appender->getFormatter()) {
     appender->setFormatter(m_formatter);
   }
   m_appenders.emplace_back(appender);
@@ -373,10 +412,34 @@ void Logger::delAppender(LogAppender::ptr appender) {
   }
 }
 
+void Logger::clearAppender() { return m_appenders.clear(); }
+
+void Logger::setFormatter(LogFormatter::ptr fmt) {
+  m_formatter = fmt;
+  for (auto app : m_appenders) {
+    if (!app->getFormatter()) {
+      app->setFormatter(fmt);
+    }
+  }
+}
+
+void Logger::setFormatter(const std::string &pattern) {
+  LogFormatter::ptr fmt(new LogFormatter(pattern));
+  if (fmt->error()) {
+    std::cerr << "formatter pattern error : " << pattern << std::endl;
+    return;
+  }
+  setFormatter(fmt);
+}
+
 void Logger::log(LogLevel::Level level, LogEvent::ptr event) {
   if (level >= m_level) {
-    for (auto app : m_appenders) {
-      app->log(level, event);
+    if (!m_appenders.empty()) {
+      for (auto app : m_appenders) {
+        app->log(level, event);
+      }
+    } else {
+      m_root->log(level, event);
     }
   }
 }
