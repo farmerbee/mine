@@ -7,6 +7,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -62,6 +63,19 @@ LogEvent::LogEvent(std::shared_ptr<Logger> logger, LogLevel::Level level,
     : m_logger(logger), m_level(level), m_elapse(elapse),
       m_timestamp(std::time(NULL)), m_threadid(threadid), m_fiberid(fiberid),
       m_filename(__FILE__), m_lineno(__LINE__) {}
+
+LogEventWrapper::LogEventWrapper(LogEvent::ptr event) : m_event(event) {}
+
+// log the string stream when deconstructed
+LogEventWrapper::~LogEventWrapper() {
+  std::stringstream& ss = m_event->getSS();
+  if (!ss.str().empty())
+  {
+    m_event->getLogger()->log(m_event->getLevel(), m_event);
+  }
+}
+
+std::stringstream &LogEventWrapper::getSS() { return m_event->getSS(); }
 
 /**----------------- LogFormatter ---------------------------**/
 
@@ -369,8 +383,7 @@ void FileLogAppender::log(LogLevel::Level level, LogEvent::ptr event) {
     return;
 
   auto logTime = event->getTimestamp();
-  if (logTime > m_lastTime + 3)
-  {
+  if (logTime > m_lastTime + 3) {
     reopen();
     m_lastTime = logTime;
   }
@@ -453,3 +466,25 @@ void Logger::warn(LogEvent::ptr event) { log(LogLevel::Level::WARN, event); }
 void Logger::error(LogEvent::ptr event) { log(LogLevel::Level::ERROR, event); }
 
 void Logger::fatal(LogEvent::ptr event) { log(LogLevel::Level::FATAL, event); }
+
+/**----------------- LogManager---------------------------**/
+
+LogManager::LogManager() {
+  m_root.reset(new Logger);
+  m_root->addAppender(StdLogAppender::ptr(new StdLogAppender));
+
+  m_loggers[m_root->getName()] = m_root;
+}
+
+Logger::ptr LogManager::getLogger(const std::string &name) {
+  if (!m_loggers.count(name)) {
+    Logger::ptr newLogger(new Logger(name));
+    newLogger->setRoot(m_root);
+
+    m_loggers[name] = newLogger;
+  }
+
+  return m_loggers[name];
+}
+
+Logger::ptr LogManager::getRoot() const { return m_root; }

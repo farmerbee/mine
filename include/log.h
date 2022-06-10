@@ -12,7 +12,21 @@
 #include <sstream>
 #include <string.h>
 #include <string>
+#include <unordered_map>
 #include <vector>
+
+#include "singleton.h"
+
+#define LOG_EVENT(logger) (LogEvent::ptr(new LogEvent(logger, LogLevel::INFO, 0, time(NULL), 22, 33)))
+
+#define LOG_LEVEL(level, logger) \
+      LogEventWrapper(LOG_EVENT(logger)).getSS()
+
+#define LOG_DEBUG(logger) LOG_LEVEL(LogLevel::DEBUG, logger)
+#define LOG_INFO(logger) LOG_LEVEL(LogLevel::INFO, logger)
+#define LOG_WARN(logger) LOG_LEVEL(LogLevel::WARN, logger)
+#define LOG_ERROR(logger) LOG_LEVEL(LogLevel::ERROR, logger)
+#define LOG_FATAL(logger) LOG_LEVEL(LogLevel::FATAL, logger)
 
 // enum class LogLevel { Debug, Info, Warn, Error, Fatal,
 // };
@@ -49,6 +63,7 @@ public:
   std::shared_ptr<Logger> getLogger() const { return m_logger; }
   LogLevel::Level getLevel() const { return m_level; }
   std::string getContent() const { return m_ss.str(); }
+  std::stringstream& getSS() {return m_ss;}
 
 private:
   std::string m_filename;  // the name of the log file
@@ -61,6 +76,16 @@ private:
   LogLevel::Level m_level;
   std::stringstream
       m_ss; // utilize string stream to store the contents of the log event
+};
+
+class LogEventWrapper{
+public:
+  LogEventWrapper(LogEvent::ptr event);
+  ~LogEventWrapper();
+
+  std::stringstream& getSS();
+private:
+  LogEvent::ptr m_event;
 };
 
 class LogFormatter {
@@ -121,11 +146,11 @@ public:
   virtual ~LogAppender();
   virtual void log(LogLevel::Level level, LogEvent::ptr event) = 0;
 
-  void setFormatter(LogFormatter::ptr fmt); 
-  LogFormatter::ptr getFormatter() const; 
+  void setFormatter(LogFormatter::ptr fmt);
+  LogFormatter::ptr getFormatter() const;
 
-  void setLevel(LogLevel::Level level); 
-  LogLevel::Level getLevel() const; 
+  void setLevel(LogLevel::Level level);
+  LogLevel::Level getLevel() const;
 
 protected:
   LogLevel::Level m_level;
@@ -146,7 +171,7 @@ class FileLogAppender : public LogAppender {
 public:
   typedef std::shared_ptr<FileLogAppender> ptr;
 
-  FileLogAppender(const std::string& file);
+  FileLogAppender(const std::string &file);
 
   ~FileLogAppender();
   void log(LogLevel::Level level, LogEvent::ptr event) override;
@@ -167,6 +192,8 @@ public:
 
   void setLevel(LogLevel::Level level) { m_level = level; }
   LogLevel::Level getLevel() const { return m_level; }
+  std::string getName() const { return m_name; }
+  void setRoot(Logger::ptr root) { m_root = root; }
 
   void addAppender(LogAppender::ptr appender);
   void delAppender(LogAppender::ptr appender);
@@ -192,5 +219,22 @@ private:
   LogFormatter::ptr m_formatter;
   Logger::ptr m_root;
 };
+
+class LogManager {
+public:
+  typedef std::shared_ptr<LogManager> ptr;
+
+  LogManager();
+  ~LogManager() {}
+
+  Logger::ptr getLogger(const std::string &name);
+  Logger::ptr getRoot() const;
+
+private:
+  std::unordered_map<std::string, Logger::ptr> m_loggers;
+  Logger::ptr m_root;
+};
+
+typedef Singleton<LogManager> g_log_manager;
 
 #endif
