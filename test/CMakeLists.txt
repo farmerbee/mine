@@ -12,3 +12,6 @@ add_executable(log-test log-test.cpp)
 
 target_link_libraries(log-test log) 
 
+add_executable(thread-test thread-test.cpp)
+
+target_link_libraries(thread-test thread) 
