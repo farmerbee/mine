@@ -15,12 +15,13 @@
 #include <unordered_map>
 #include <vector>
 
+#include "mutex.h"
 #include "singleton.h"
 
-#define LOG_EVENT(logger) (LogEvent::ptr(new LogEvent(logger, LogLevel::INFO, 0, time(NULL), 22, 33)))
+#define LOG_EVENT(logger)                                                      \
+  (LogEvent::ptr(new LogEvent(logger, LogLevel::INFO, 0, time(NULL), 22, 33)))
 
-#define LOG_LEVEL(level, logger) \
-      LogEventWrapper(LOG_EVENT(logger)).getSS()
+#define LOG_LEVEL(level, logger) LogEventWrapper(LOG_EVENT(logger)).getSS()
 
 #define LOG_DEBUG(logger) LOG_LEVEL(LogLevel::DEBUG, logger)
 #define LOG_INFO(logger) LOG_LEVEL(LogLevel::INFO, logger)
@@ -28,8 +29,13 @@
 #define LOG_ERROR(logger) LOG_LEVEL(LogLevel::ERROR, logger)
 #define LOG_FATAL(logger) LOG_LEVEL(LogLevel::FATAL, logger)
 
+#define LOG_ROOT() mine::g_log_manager::getInstance()->getRoot()
+#define LOG_NAME(name) mine::g_log_manager::getInstance()->getLogger(name)
+
 // enum class LogLevel { Debug, Info, Warn, Error, Fatal,
 // };
+namespace mine {
+
 class Logger;
 
 class LogLevel {
@@ -63,7 +69,7 @@ public:
   std::shared_ptr<Logger> getLogger() const { return m_logger; }
   LogLevel::Level getLevel() const { return m_level; }
   std::string getContent() const { return m_ss.str(); }
-  std::stringstream& getSS() {return m_ss;}
+  std::stringstream &getSS() { return m_ss; }
 
 private:
   std::string m_filename;  // the name of the log file
@@ -78,12 +84,13 @@ private:
       m_ss; // utilize string stream to store the contents of the log event
 };
 
-class LogEventWrapper{
+class LogEventWrapper {
 public:
   LogEventWrapper(LogEvent::ptr event);
   ~LogEventWrapper();
 
-  std::stringstream& getSS();
+  std::stringstream &getSS();
+
 private:
   LogEvent::ptr m_event;
 };
@@ -139,7 +146,9 @@ private:
 };
 
 class LogAppender {
+  friend class Logger;
 public:
+  typedef SpinLock LockType;
   typedef std::shared_ptr<LogAppender> ptr;
 
   LogAppender();
@@ -147,14 +156,16 @@ public:
   virtual void log(LogLevel::Level level, LogEvent::ptr event) = 0;
 
   void setFormatter(LogFormatter::ptr fmt);
-  LogFormatter::ptr getFormatter() const;
+  void initFormatter(LogFormatter::ptr fmt);
+  LogFormatter::ptr getFormatter();
 
   void setLevel(LogLevel::Level level);
-  LogLevel::Level getLevel() const;
+  LogLevel::Level getLevel();
 
 protected:
   LogLevel::Level m_level;
   LogFormatter::ptr m_formatter;
+  LockType m_lock;
 };
 
 class StdLogAppender : public LogAppender {
@@ -187,6 +198,8 @@ private:
 class Logger {
 public:
   typedef std::shared_ptr<Logger> ptr;
+  typedef SpinLock LockType;
+
   Logger(std::string name = "root");
   ~Logger();
 
@@ -218,11 +231,13 @@ private:
   std::string m_name;
   LogFormatter::ptr m_formatter;
   Logger::ptr m_root;
+  LockType m_lock;
 };
 
 class LogManager {
 public:
   typedef std::shared_ptr<LogManager> ptr;
+  typedef SpinLock LockType;
 
   LogManager();
   ~LogManager() {}
@@ -233,8 +248,11 @@ public:
 private:
   std::unordered_map<std::string, Logger::ptr> m_loggers;
   Logger::ptr m_root;
+  LockType m_lock;
 };
 
 typedef Singleton<LogManager> g_log_manager;
+
+} // namespace mine
 
 #endif

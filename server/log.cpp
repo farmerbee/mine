@@ -1,4 +1,5 @@
 #include "log.h"
+#include "mutex.h"
 
 #include <algorithm>
 #include <cctype>
@@ -15,6 +16,7 @@
 #include <vector>
 
 /**----------------- LogLevel ---------------------------**/
+using namespace mine;
 
 std::string LogLevel::toString(LogLevel::Level level) {
   switch (level) {
@@ -68,9 +70,8 @@ LogEventWrapper::LogEventWrapper(LogEvent::ptr event) : m_event(event) {}
 
 // log the string stream when deconstructed
 LogEventWrapper::~LogEventWrapper() {
-  std::stringstream& ss = m_event->getSS();
-  if (!ss.str().empty())
-  {
+  std::stringstream &ss = m_event->getSS();
+  if (!ss.str().empty()) {
     m_event->getLogger()->log(m_event->getLevel(), m_event);
   }
 }
@@ -351,18 +352,37 @@ LogAppender::LogAppender() : m_level(LogLevel::DEBUG), m_formatter() {}
 
 LogAppender::~LogAppender() {}
 
-void LogAppender::setFormatter(LogFormatter::ptr fmt) { m_formatter = fmt; }
+void LogAppender::setFormatter(LogFormatter::ptr fmt) {
+  LockType::Lock lock(m_lock);
+  m_formatter = fmt;
+}
 
-LogFormatter::ptr LogAppender::getFormatter() const { return m_formatter; }
+void LogAppender::initFormatter(LogFormatter::ptr fmt) {
+  LockType::Lock lock(m_lock);
+  if (!m_formatter)
+    m_formatter = fmt;
+}
 
-void LogAppender::setLevel(LogLevel::Level level) { m_level = level; }
+LogFormatter::ptr LogAppender::getFormatter() {
+  LockType::Lock lock(m_lock);
+  return m_formatter;
+}
 
-LogLevel::Level LogAppender::getLevel() const { return m_level; }
+void LogAppender::setLevel(LogLevel::Level level) {
+  LockType::Lock lock(m_lock);
+  m_level = level;
+}
+
+LogLevel::Level LogAppender::getLevel() {
+  LockType::Lock lock(m_lock);
+  return m_level;
+}
 
 StdLogAppender::~StdLogAppender() {}
 
 void StdLogAppender::log(LogLevel::Level level, LogEvent::ptr event) {
   if (level >= m_level) {
+    LockType::Lock lock(m_lock);
     m_formatter->format(std::cout, level, event);
   }
 }
@@ -373,6 +393,7 @@ FileLogAppender::FileLogAppender(const std::string &file)
 }
 
 FileLogAppender::~FileLogAppender() {
+  LockType::Lock lock(m_lock);
   if (m_filestream.is_open()) {
     m_filestream.close();
   }
@@ -388,10 +409,12 @@ void FileLogAppender::log(LogLevel::Level level, LogEvent::ptr event) {
     m_lastTime = logTime;
   }
 
+  LockType::Lock lock(m_lock);
   m_formatter->format(m_filestream, level, event);
 }
 
 bool FileLogAppender::reopen() {
+  LockType::Lock lock(m_lock);
   if (m_filestream.is_open()) {
     m_filestream.close();
   }
@@ -410,13 +433,23 @@ Logger::Logger(std::string name) : m_name(name), m_level(LogLevel::DEBUG) {
 Logger::~Logger() {}
 
 void Logger::addAppender(LogAppender::ptr appender) {
-  if (!appender->getFormatter()) {
-    appender->setFormatter(m_formatter);
-  }
+  // if (!appender->getFormatter()) {
+  //   appender->setFormatter(m_formatter);
+  // }
+  // {
+  //   LogAppender::LockType::Lock lock(appender->m_lock);
+  //   if (!appender->m_formatter) {
+  //     appender->m_formatter = m_formatter;
+  //   }
+  // }
+  appender->initFormatter(m_formatter);
+
+  LockType::Lock lock(m_lock);
   m_appenders.emplace_back(appender);
 }
 
 void Logger::delAppender(LogAppender::ptr appender) {
+  LockType::Lock lock(m_lock);
   for (auto it = m_appenders.begin(); it != m_appenders.end(); it++) {
     if (*it == appender) {
       m_appenders.erase(it);
@@ -425,14 +458,19 @@ void Logger::delAppender(LogAppender::ptr appender) {
   }
 }
 
-void Logger::clearAppender() { return m_appenders.clear(); }
+void Logger::clearAppender() {
+  LockType::Lock lock(m_lock);
+  return m_appenders.clear();
+}
 
 void Logger::setFormatter(LogFormatter::ptr fmt) {
+  LockType::Lock lock(m_lock);
   m_formatter = fmt;
   for (auto app : m_appenders) {
-    if (!app->getFormatter()) {
-      app->setFormatter(fmt);
-    }
+    // if (!app->getFormatter()) {
+    //   app->setFormatter(fmt);
+    // }
+    app->initFormatter(m_formatter);
   }
 }
 
@@ -447,6 +485,7 @@ void Logger::setFormatter(const std::string &pattern) {
 
 void Logger::log(LogLevel::Level level, LogEvent::ptr event) {
   if (level >= m_level) {
+    LockType::Lock lock(m_lock);
     if (!m_appenders.empty()) {
       for (auto app : m_appenders) {
         app->log(level, event);
@@ -477,6 +516,7 @@ LogManager::LogManager() {
 }
 
 Logger::ptr LogManager::getLogger(const std::string &name) {
+  LockType::Lock lock(m_lock);
   if (!m_loggers.count(name)) {
     Logger::ptr newLogger(new Logger(name));
     newLogger->setRoot(m_root);

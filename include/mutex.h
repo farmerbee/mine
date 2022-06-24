@@ -19,7 +19,7 @@ public:
   ~ScoppedLockImpl() { m_mutex.unlock(); }
 
 private:
-  T& m_mutex;
+  T &m_mutex;
 };
 
 class Mutex : public NonCopyable {
@@ -50,6 +50,21 @@ public:
 private:
   pthread_mutex_t m_mutex;
   pid_t m_holder;
+};
+
+class SpinLock : public NonCopyable {
+public:
+  typedef ScoppedLockImpl<SpinLock> Lock;
+  SpinLock() { pthread_spin_init(&m_lock, 0); }
+
+  ~SpinLock() { pthread_spin_destroy(&m_lock); }
+
+  void lock() { pthread_spin_lock(&m_lock); }
+
+  void unlock() { pthread_spin_unlock(&m_lock); }
+
+private:
+  pthread_spinlock_t m_lock;
 };
 
 // TODO: encapsulate reader and writter lockguard

@@ -1,6 +1,8 @@
 #include "log.h"
 #include <cstddef>
 
+using namespace mine;
+
 int main() {
   Logger::ptr logger(new Logger());
   // log event
